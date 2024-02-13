@@ -1,0 +1,9 @@
+name: canary
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - ipykernel
+    - numpy
+    - pandas
+    - matplotlib
