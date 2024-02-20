@@ -1,5 +1,6 @@
 import itertools
 import random
+import json
 
 class Card:
     def __init__(self, value, suit):
@@ -25,6 +26,8 @@ class CardGame:
         self.game_over = False
         self.play_direction = 1 # 1 for clockwise, -1 for counterclockwise
         self.current_player_index = -1
+        self.turn = 0
+        self.known_opponent_cards = [[] for _ in range(num_players)]
         self.setup_game()
         
     def create_deck(self):
@@ -105,6 +108,8 @@ class CardGame:
         
         while not self.game_over:
             # Player takes their turn.
+            game_data = self.collect_game_data()
+            #print(game_data)
             self.play_turn()        
             self.game_over = self.check_game_over()
             
@@ -112,7 +117,7 @@ class CardGame:
                 #print("thats a big pile")
                 for i in range(len(self.play_pile) -3):
                     if self.play_pile[i] == self.play_pile[i+1] == self.play_pile[i+2] == self.play_pile[i+3]:
-                        print("4 in a row!")    
+                        #print("4 in a row!")    
                         self.play_pile.clear()
                 
             
@@ -122,7 +127,8 @@ class CardGame:
         print("Game Over")
 
     def play_turn(self):
-        print(f"Player {self.current_player_index + 1}'s turn:")
+        self.turn += 1
+        #print(f"Player {self.current_player_index + 1}'s turn:")
         
 
         # Try playing from hand, face-up, then face-down in order.
@@ -132,18 +138,18 @@ class CardGame:
                     print("No more cards to play.")
          
     def attempt_play_from_hand(self):
-        print("Player Hand: ", self.players_hands[self.current_player_index])
+        #print("Player Hand: ", self.players_hands[self.current_player_index])
         return self.attempt_play(card_source = self.players_hands[self.current_player_index])
 
     def attempt_play_from_face_up(self):
-        print("Players Face-Up Hand: ", self.face_up_cards[self.current_player_index])
+        #print("Players Face-Up Hand: ", self.face_up_cards[self.current_player_index])
         return self.attempt_play(card_source = self.face_up_cards[self.current_player_index], is_face_up = True)
 
     def attempt_play_from_face_down(self, is_face_down = True):
         # Face-down play is a bit different as it involves random choice and immediate play without checking
         if self.face_down_cards[self.current_player_index]:
             chosen_card = random.choice(self.face_down_cards[self.current_player_index])
-            #print("Players Face-Down Hand:: ", chosen_card)
+            ##print("Players Face-Down Hand:: ", chosen_card)
             return self.attempt_play(card_source = chosen_card, is_face_down = True)
         else:
             return False
@@ -156,9 +162,9 @@ class CardGame:
                 return False
             
             playable_cards = [card for card in card_source if self.can_play_card(card)]
-            print("Playable Cards: ", playable_cards)
+            #print("Playable Cards: ", playable_cards)
             if not playable_cards:
-                    print("No playable cards in face up pile")
+                    #print("No playable cards in face up pile")
                     self.pick_up_pile()
                     return True
             chosen_card = random.choice(playable_cards)
@@ -169,7 +175,7 @@ class CardGame:
             if not card_source:
                 return False
             
-            print("Card Selected: ", card_source)
+            #print("Card Selected: ", card_source)
             
             if self.can_play_card(card_source):
                 self.play_pile.append(card_source)
@@ -183,11 +189,11 @@ class CardGame:
 
         
         if not card_source:
-            print("No Cards in Hand!")
+            #print("No Cards in Hand!")
             return False
         
         playable_cards = [card for card in card_source if self.can_play_card(card)]
-        print("Playable Cards: ", playable_cards)
+        #print("Playable Cards: ", playable_cards)
         if not playable_cards:
             self.pick_up_pile()   
             return True
@@ -218,11 +224,15 @@ class CardGame:
         return card.value >= top_card.value
 
     def play_card(self, chosen_card, is_face_up=False, is_face_down=False):
+        # Remove the card from known_opponent_cards if it was known
+        if chosen_card in self.known_opponent_cards[self.current_player_index]:
+            self.known_opponent_cards[self.current_player_index].remove(chosen_card)
+
         # Check for special cards (Joker, 2, 10, and handling of 7 if needed)
         if chosen_card.is_special:
             if chosen_card.value == 'Joker':
                 self.play_pile.append(chosen_card)
-                print(f"Played {chosen_card}.")
+                #print(f"Played {chosen_card}.")
                 self.play_direction *= -1
                 if not is_face_down:
                     if is_face_up:
@@ -235,7 +245,7 @@ class CardGame:
             elif chosen_card.value == 2:
                 # Logic for 2 allowing the player to play again
                 self.play_pile.append(chosen_card)
-                print(f"Played {chosen_card}.")
+                #print(f"Played {chosen_card}.")
                 if not is_face_down:
                     if is_face_up:
                         self.face_up_cards[self.current_player_index].remove(chosen_card)
@@ -246,7 +256,7 @@ class CardGame:
             elif chosen_card.value == 10:
                 # Maybe a special logic for 10, like clearing the play pile
                 self.play_pile.append(chosen_card)
-                print(f"Played {chosen_card}.")
+                #print(f"Played {chosen_card}.")
                 self.clear_play_pile()
                 # Remove the card from its current location unless it's face-down
                 if not is_face_down:
@@ -261,7 +271,7 @@ class CardGame:
         elif chosen_card.is_seven:
             # Handle seven's special rule if applicable
             self.play_pile.append(chosen_card)
-            print(f"Played {chosen_card}.")
+            #print(f"Played {chosen_card}.")
             # Remove the card from its current location unless it's face-down
             if not is_face_down:
                 if is_face_up:
@@ -278,7 +288,7 @@ class CardGame:
                 self.players_hands[self.current_player_index].remove(chosen_card)
 
         self.play_pile.append(chosen_card)
-        print(f"Played {chosen_card}.")
+        #print(f"Played {chosen_card}.")
         self.post_play_card_actions()
         
     def post_play_card_actions(self):
@@ -292,7 +302,7 @@ class CardGame:
         # This is a simplified representation. You might store the current direction of play
         # (e.g., as a class attribute) and reverse it here. For example:
         self.play_direction *= -1
-        print("Reversing Direction!")
+        #print("Reversing Direction!")
         return
     
     def draw_card(self):
@@ -306,8 +316,9 @@ class CardGame:
     def pick_up_pile(self):
         """Player picks up the play pile."""
         self.players_hands[self.current_player_index].extend(self.play_pile)
+        self.known_opponent_cards[self.current_player_index].extend(self.play_pile)
         self.play_pile.clear()
-        print("Pile picked up!")
+        #print("Pile picked up!")
         
     def check_game_over(self):
         # Implement logic to determine if the game has ended.
@@ -316,27 +327,56 @@ class CardGame:
             if (not self.players_hands[player_index] and 
                 not self.face_up_cards[player_index] and 
                 not self.face_down_cards[player_index]):
-                print(f"Player {player_index + 1} wins and is declared the Canary!")
+                #print(f"Player {player_index + 1} wins and is declared the Canary!")
                 return True  # A winner is found
         return False  # The game continues
     
     def allow_play_again(self):
-        print("Play again:")
+        #print("Play again:")
         self.current_player_index = (self.current_player_index - self.play_direction)
         #print(self.current_player_index)
         # Implement logic to allow the current player to play again. This might mean not advancing
         # the current_player_index or setting a flag that allows another turn for the current player.
     
     def clear_play_pile(self):
-        print("Clearing play pile")
+        #print("Clearing play pile")
         self.play_pile.clear()
         # Implement logic to clear the play pile if a 10 is played, for example.
 
     def handle_seven_action(self):
         print("Seven or below!")
         
-    # Implement any special rule for playing a seven, if applicable.
+    def collect_game_data(self):
+        game_data = {
+            'turn_number': self.turn,
+            'current_player': self.current_player_index + 1,
+            'num_players': self.num_players,
+            'cards_in_hands': [[str(card) for card in hand] if i == self.current_player_index else ['Unknown'] * len(hand) for i, hand in enumerate(self.players_hands)],
+            'known_opponent_cards': [[str(card) for card in known_cards] for known_cards in self.known_opponent_cards], 
+            'num_cards_in_hands': [len(hand) for hand in self.players_hands],
+            'top_card': str(self.play_pile[-1]) if self.play_pile else None,
+            'cards_in_pile': [str(card) for card in self.play_pile[:-1]] if len(self.play_pile) > 1 else [],
+            'face_up_cards': [[str(card) for card in face_up] for face_up in self.face_up_cards],
+            'num_face_up_cards': [len(face_up) for face_up in self.face_up_cards],
+            'num_face_down_cards': [len(face_down) for face_down in self.face_down_cards],
+            'play_direction': self.play_direction,
+            'num_cards_in_draw_pile': len(self.draw_pile)
+        }
 
-        
-game = CardGame(4)  
-game.start_game()
+        with open('game_data.txt', 'a') as file:
+            json.dump(game_data, file)
+            file.write('\n\n')
+
+        return game_data
+
+   
+i=0
+while i < 10:    
+    game = CardGame(4)  
+    game.start_game()
+    print("Game: ",i)
+    i += 1
+
+
+
+#import visualizations
