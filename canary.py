@@ -111,7 +111,7 @@ class CardGame:
             game_data = self.collect_game_data()
             #print(game_data)
             self.play_turn()        
-            self.game_over = self.check_game_over()
+            
             
             if len(self.play_pile) >= 4:
                 #print("thats a big pile")
@@ -120,10 +120,11 @@ class CardGame:
                         #print("4 in a row!")    
                         self.play_pile.clear()
                 
-            
+            self.game_over = self.check_game_over()
             # Move to the next player
             self.current_player_index = (self.current_player_index + self.play_direction) % self.num_players
-            
+
+        game_data = self.collect_game_data()    
         print("Game Over")
 
     def play_turn(self):
@@ -360,7 +361,9 @@ class CardGame:
             'num_face_up_cards': [len(face_up) for face_up in self.face_up_cards],
             'num_face_down_cards': [len(face_down) for face_down in self.face_down_cards],
             'play_direction': self.play_direction,
-            'num_cards_in_draw_pile': len(self.draw_pile)
+            'num_cards_in_draw_pile': len(self.draw_pile),
+            'game_over': self.game_over,
+            'game_number': game_number
         }
 
         with open('game_data.txt', 'a') as file:
@@ -370,12 +373,12 @@ class CardGame:
         return game_data
 
    
-i=0
-while i < 10:    
+game_number = 1
+while game_number < 5:    
     game = CardGame(4)  
     game.start_game()
-    print("Game: ",i)
-    i += 1
+    print("Game: ", game_number)
+    game_number += 1
 
 
 
